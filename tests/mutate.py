@@ -30,7 +30,7 @@ M = [
     ("main.gd", "	if not _is_midi_name(f) or f.find(\"/\") >= 0 or f.find(\"\\\\\") >= 0:\n		return", "	if false:\n		return", "ui", "delete follows a path"),
     ("main.gd", "		minigame.set_process(not on)", "		pass", "ui", "string keys still strum under a file dialog"),
     ("main.gd", "	if not markers_dirty:\n		return", "	return", "ui", "markers are not given back"),
-    ("main.gd", "	if player.playing:\n		player.pause()\n	player.stop()\n	minigame = null", "	minigame = null", "ui", "song keeps playing when the menu closes"),
+    ("main.gd", "	if player.playing:\n		player.pause()\n	player.stop()\n	set_keys_blocked(false)", "	set_keys_blocked(false)", "ui", "song keeps playing when the menu closes"),
     ("main.gd", "	if RESERVED.has(out.split(\".\")[0].to_upper()):\n		out = \"_\" + out", "	pass", "ui", "Windows device names allowed"),
     ("main.gd", "		if not r[\"ok\"]:\n			bad.append(\"%s (%s)\" % [fname, r[\"error\"]])\n			continue", "		pass", "ui", "files are not checked on import"),
     ("main.gd", "	if mode == 1:\n		player.seek(0.0)\n		player.play()", "	if mode == 1:\n		pass", "ui", "repeat song does nothing"),
