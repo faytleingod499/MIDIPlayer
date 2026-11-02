@@ -1,0 +1,5 @@
+out/
+*.import
+.import/
+tests/stubs/playerdata.gd
+tests/stubs/item_resource.gd

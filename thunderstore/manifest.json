@@ -1,0 +1,9 @@
+{
+    "name": "MIDI_Player",
+    "version_number": "1.0.0",
+    "website_url": "https://github.com/faytleingod499/MIDIPlayer",
+    "description": "Import MIDI files in the guitar menu and have your character play them on the guitar by itself. Client side, works on any server. This mod was created with the assistance of AI.",
+    "dependencies": [
+        "NotNet-GDWeave-2.0.14"
+    ]
+}
