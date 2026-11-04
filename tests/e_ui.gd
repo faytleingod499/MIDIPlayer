@@ -511,6 +511,118 @@ func _go():
 	ok(wp.x <= 1920.0 - 700.0 + 0.5 and wp.y <= 1080.0 - 80.0 + 0.5 and wp.x >= 0.0, "a saved position off the screen is brought back into view (%s)" % str(wp))
 	mod.settings["x"] = 600.0
 	mod.settings["y"] = 60.0
+	# ---- playing with the menu closed (the "keep playing" option)
+	var G = root.get_node("Globals")
+	var PD = root.get_node("PlayerData")
+	ok(G.item_data.has("guitar") and G.item_data.has("guitar_pink") and not mod._is_guitar_id("empty_hand") and mod._is_guitar_id("guitar") and mod._is_guitar_id("guitar_pink"), "the real item list: the guitars are guitars, the empty hand is not")
+	ok(mod.settings["keep_playing"] == false, "keep playing is off by default")
+	ok(not mod.window.chk_keep.pressed, "...and the tick box shows it")
+	mod.window.chk_keep.pressed = true
+	yield(frames(2), "completed")
+	ok(mod.settings["keep_playing"] == true, "ticking the box turns the option on")
+	mod.save_now()
+	var saved = File.new()
+	saved.open("user://MIDIPlayer/_settings.json", File.READ)
+	ok(saved.get_as_text().find("\"keep_playing\":true") >= 0, "...and it is saved")
+	saved.close()
+	S.player.held_item = {"id": "guitar", "ref": 11, "size": 1.0, "quality": 0, "tags": []}
+	mod.select_song(mi, true)
+	yield(frames(2), "completed")
+	P.set_process(true)
+	S.close_guitar()
+	yield(create_timer(0.7), "timeout")
+	ok(mod.window == null and mod.minigame == null and mod.background and P.playing, "menu closed while holding the guitar: the song goes on")
+	ok(not mod.keys_blocked, "...with the game's keys untouched")
+	var at = strums.size()
+	yield(create_timer(0.6), "timeout")
+	ok(strums.size() > at and P.clock > 0.0, "...and the strums keep coming with no menu")
+	# the menu is opened again: the window is back and the song was not restarted
+	var clock_then = P.clock
+	S.open_guitar()
+	yield(create_timer(0.7), "timeout")
+	ok(mod.window != null and not mod.background and P.playing and P.clock >= clock_then, "opened again: a window on the new menu, the song still playing from where it was")
+	ok(mod.window.chk_keep.pressed, "...and the tick box is ticked")
+	# the menu is closed again, then the character picks another item: the song stops at once
+	S.close_guitar()
+	yield(create_timer(0.7), "timeout")
+	ok(mod.background and P.playing, "closed again: still playing")
+	PD.emit_signal("_item_equip", 99999)   # a ref that is not a guitar (the game says so before the held item changes)
+	ok(not mod.background and not P.playing and P.clock == 0.0, "another item is picked: the song stops and goes back to the start")
+	var at2 = strums.size()
+	yield(create_timer(0.5), "timeout")
+	ok(strums.size() == at2, "...no more strums")
+	# the same item picked as a guitar (another colour) does not stop it
+	S.open_guitar()
+	yield(create_timer(0.7), "timeout")
+	mod.select_song(mi, true)
+	yield(frames(2), "completed")
+	S.close_guitar()
+	yield(create_timer(0.7), "timeout")
+	ok(mod.background and P.playing, "again playing with the menu closed")
+	PD.inventory.append({"id": "guitar_pink", "ref": 424242, "size": 1.0, "quality": 0, "tags": []})
+	PD.emit_signal("_item_equip", 424242)
+	ok(mod.background and P.playing, "another guitar is picked: it goes on")
+	PD.inventory.pop_back()
+	# the held item changes without the signal (a missed signal): the poll notices
+	S.player.held_item = {"id": "empty_hand", "ref": 0, "size": 1.0, "quality": 0, "tags": []}
+	yield(create_timer(0.7), "timeout")
+	ok(not mod.background and not P.playing and P.clock == 0.0, "the hand is empty: the poll stops the song")
+	# the option is on but the character does not hold a guitar when the menu closes: the old behaviour
+	S.open_guitar()
+	yield(create_timer(0.7), "timeout")
+	mod.select_song(mi, true)
+	yield(frames(2), "completed")
+	mod._detach()   # what the poll does when the menu goes away
+	ok(not mod.background and not P.playing and P.clock == 0.0, "no guitar in hand when the menu closes: the song stops at once")
+	yield(create_timer(0.7), "timeout")   # the menu is still there, so the poll takes it up again
+	mod.select_song(mi, true)
+	yield(frames(2), "completed")
+	S.close_guitar()
+	yield(create_timer(0.7), "timeout")
+	ok(not mod.background and not P.playing and P.clock == 0.0, "...and it stays stopped")
+	# the character goes away (left the game / was freed)
+	S.player.held_item = {"id": "guitar", "ref": 11, "size": 1.0, "quality": 0, "tags": []}
+	S.open_guitar()
+	yield(create_timer(0.7), "timeout")
+	mod.select_song(mi, true)
+	yield(frames(2), "completed")
+	S.close_guitar()
+	yield(create_timer(0.7), "timeout")
+	ok(mod.background and P.playing, "playing again with the menu closed")
+	S.player.remove_from_group("controlled_player")
+	S.player.get_parent().remove_child(S.player)
+	yield(create_timer(0.6), "timeout")
+	ok(not mod.background and not P.playing, "the character is gone: the song stops")
+	root.add_child(S.player)
+	S.player.add_to_group("controlled_player")
+	# the song ends while the menu is closed
+	S.open_guitar()
+	yield(create_timer(0.7), "timeout")
+	mod.settings["repeat"] = 0
+	mod.select_song(mi, true)
+	yield(frames(2), "completed")
+	S.close_guitar()
+	yield(create_timer(0.7), "timeout")
+	ok(mod.background and P.playing, "playing with the menu closed once more")
+	P.seek(P.end_time - 0.05)
+	yield(create_timer(0.9), "timeout")
+	ok(not P.playing and not mod.background, "the song ends by itself: nothing is left running")
+	# the option off again: closing the menu stops the song as before
+	S.open_guitar()
+	yield(create_timer(0.7), "timeout")
+	mod.window.chk_keep.pressed = false
+	yield(frames(2), "completed")
+	ok(mod.settings["keep_playing"] == false, "unticking turns it off")
+	mod.select_song(mi, true)
+	yield(frames(2), "completed")
+	S.close_guitar()
+	yield(create_timer(0.7), "timeout")
+	ok(not mod.background and not P.playing, "option off: closing the menu stops the song")
+	P.set_process(false)
+	S.open_guitar()
+	yield(create_timer(0.7), "timeout")
+	mod.window.chk_keep.pressed = false
+
 	# a menu that is going away is not used
 	var old = S.minigame
 	old.queue_free()

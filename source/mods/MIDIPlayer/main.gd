@@ -12,7 +12,7 @@ extends Node
 #   window.gd       the window in the guitar menu
 #   main.gd         this file: finds the guitar menu, keeps the library (user://MIDIPlayer), settings and the song
 
-const VERSION = "1.0.0"
+const VERSION = "1.1.0"
 const MOD_DIR = "res://mods/MIDIPlayer/"
 const LIB_DIR = "user://MIDIPlayer"
 const SETTINGS_FILE = "user://MIDIPlayer/_settings.json"
@@ -29,7 +29,7 @@ var GuitarMap = null
 var WindowScript = null
 
 var settings = {"x": 600.0, "y": 60.0, "collapsed": false, "speed": 1.0, "semitones": 0, "auto_octave": true,
-	"repeat": 0, "last_song": "", "last_dir": ""}
+	"repeat": 0, "last_song": "", "last_dir": "", "keep_playing": false}
 var songs = []             # [{file, name, size, duration (-1 = not read yet), notes, bad}]
 var songs_version = 0      # changes when the list changes
 var index = {}             # file -> {size, duration, notes, bad}: what was learned about each file, so it is read once
@@ -44,6 +44,8 @@ var message_until = 0.0
 var player = null          # song_player.gd
 var minigame = null        # the game's guitar menu while it is open
 var window = null
+var background = false     # the menu is closed but the song keeps playing (the player still holds the guitar)
+var bg_player = null       # the player whose guitar plays it then
 var keys_blocked = false
 var saved_actions = {}     # the game's key bindings taken away while a file dialog is open
 var clock = 0.0
@@ -70,6 +72,9 @@ func _ready():
 	scan_library()
 	if auto:
 		get_tree().connect("files_dropped", self, "_on_files_dropped")
+		var pd = get_node_or_null("/root/PlayerData")
+		if pd != null and pd.has_signal("_item_equip"):
+			pd.connect("_item_equip", self, "_on_item_equip")
 
 
 func _process(delta):
@@ -101,6 +106,7 @@ func _find_minigame():
 
 
 func _poll_minigame():
+	check_background()
 	if minigame != null and (not is_instance_valid(minigame) or minigame.is_queued_for_deletion()):
 		_detach()
 	if minigame != null:
@@ -112,6 +118,7 @@ func _poll_minigame():
 
 func attach(m):
 	minigame = m
+	background = false      # the menu is back: the window shows the song that is still playing
 	keys_blocked = false
 	window = WindowScript.new()
 	window.mod = self
@@ -124,13 +131,84 @@ func attach(m):
 
 
 func _detach():
-	if player.playing:
-		player.pause()
-	player.stop()
 	set_keys_blocked(false)
+	var who = _controlled_player()
+	if settings["keep_playing"] and player.playing and who != null and _holding_guitar(who):
+		# the menu was closed on purpose: the character keeps the guitar in hand and the song goes on
+		background = true
+		bg_player = who
+		var pd = get_node_or_null("/root/PlayerData")
+		if pd != null and pd.has_method("_send_notification"):
+			pd._send_notification("MIDI Player: still playing. Put the guitar away to stop.")
+	else:
+		if player.playing:
+			player.pause()
+		player.stop()
 	minigame = null
 	window = null
 	markers_dirty = false
+
+
+# ---------- playing with the menu closed ----------
+
+func _controlled_player():
+	for p in get_tree().get_nodes_in_group("controlled_player"):
+		if is_instance_valid(p):
+			return p
+	return null
+
+
+# Is this item one the game plays as a guitar (the plain guitar and the coloured ones)?
+func _is_guitar_id(id):
+	var g = get_node_or_null("/root/Globals")
+	if g == null or typeof(id) != TYPE_STRING:
+		return false
+	var d = g.get("item_data")
+	if typeof(d) != TYPE_DICTIONARY or not d.has(id) or typeof(d[id]) != TYPE_DICTIONARY:
+		return false
+	var f = d[id].get("file")
+	return typeof(f) == TYPE_OBJECT and f != null and str(f.get("action")) == "_play_guitar"
+
+
+func _holding_guitar(p):
+	var h = p.get("held_item")
+	return typeof(h) == TYPE_DICTIONARY and h.has("id") and _is_guitar_id(h["id"])
+
+
+func end_background():
+	background = false
+	bg_player = null
+	player.pause()
+	player.stop()
+
+
+# The song goes on only while the character that plays it still holds a guitar and the song is running.
+func check_background():
+	if not background:
+		return
+	if not player.playing:
+		background = false
+		bg_player = null
+	elif bg_player == null or not is_instance_valid(bg_player) or not bg_player.is_inside_tree() \
+			or not _holding_guitar(bg_player):
+		end_background()
+
+
+# The game says so the moment another item is picked (before the held item changes), so the song stops without delay.
+func _on_item_equip(ref):
+	if not background:
+		return
+	var pd = get_node_or_null("/root/PlayerData")
+	var it = pd.call("_find_item_code", ref) if pd != null and pd.has_method("_find_item_code") else null
+	if typeof(it) != TYPE_DICTIONARY or not it.has("id") or not _is_guitar_id(it["id"]):
+		end_background()
+
+
+func set_keep_playing(on):
+	if bool(on) == bool(settings["keep_playing"]):
+		return
+	settings["keep_playing"] = bool(on)
+	save_soon()
 
 
 # While a file dialog has the keyboard, typing a path must not do things in the game. The game reads its keys by asking
@@ -239,6 +317,7 @@ func _load_settings():
 	settings["repeat"] = int(clamp(int(r.get("repeat", 0)), 0, 2))
 	settings["last_song"] = str(r.get("last_song", ""))
 	settings["last_dir"] = str(r.get("last_dir", ""))
+	settings["keep_playing"] = bool(r.get("keep_playing", false))
 
 
 func save_soon():

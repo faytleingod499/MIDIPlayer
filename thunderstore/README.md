@@ -39,7 +39,7 @@ Songs with one or two clear instruments (a melody with a bass line) sound best. 
 
 ## Good to know
 
-- Playing stops when you close the guitar menu.
+- Playing stops when you close the guitar menu, unless you tick **Keep playing when the menu is closed**. Then you can close the menu and walk around with the guitar while the song plays. It stops when you put the guitar away (pick another item); open the guitar menu again to get the controls back.
 - You can still play by hand while a song plays. Your saved chord shapes are never changed.
 - Files up to 3 MB, up to 500 songs. A file that is not a MIDI file is refused with a message.
 - The mod does not use MIDI input devices, so it can sit next to mods that do (not tested together).

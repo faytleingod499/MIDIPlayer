@@ -30,7 +30,7 @@ M = [
     ("main.gd", "	if not _is_midi_name(f) or f.find(\"/\") >= 0 or f.find(\"\\\\\") >= 0:\n		return", "	if false:\n		return", "ui", "delete follows a path"),
     ("main.gd", "		minigame.set_process(not on)", "		pass", "ui", "string keys still strum under a file dialog"),
     ("main.gd", "	if not markers_dirty:\n		return", "	return", "ui", "markers are not given back"),
-    ("main.gd", "	if player.playing:\n		player.pause()\n	player.stop()\n	set_keys_blocked(false)", "	set_keys_blocked(false)", "ui", "song keeps playing when the menu closes"),
+    ("main.gd", "	else:\n		if player.playing:\n			player.pause()\n		player.stop()\n	minigame = null", "	else:\n		pass\n	minigame = null", "ui", "song keeps playing when the menu closes (option off)"),
     ("main.gd", "	if RESERVED.has(out.split(\".\")[0].to_upper()):\n		out = \"_\" + out", "	pass", "ui", "Windows device names allowed"),
     ("main.gd", "		if not r[\"ok\"]:\n			bad.append(\"%s (%s)\" % [fname, r[\"error\"]])\n			continue", "		pass", "ui", "files are not checked on import"),
     ("main.gd", "	if mode == 1:\n		player.seek(0.0)\n		player.play()", "	if mode == 1:\n		pass", "ui", "repeat song does nothing"),
@@ -38,7 +38,13 @@ M = [
     ("window.gd", "	if not _updating:\n		mod.set_speed(v)", "	pass", "ui", "speed slider does nothing"),
     ("main.gd", "			saved_actions[a] = InputMap.get_action_list(a)\n			InputMap.action_erase_events(a)", "			pass", "ui", "game keys stay bound under a file dialog"),
     ("main.gd", "func _restore_actions():\n	for a in saved_actions:", "func _restore_actions():\n	for a in []:", "ui", "game keys are not given back"),
-    ("main.gd", "	set_keys_blocked(false)\n	minigame = null", "	minigame = null", "ui", "keys stay off when the menu closes under a dialog"),
+    ("main.gd", "func _detach():\n	set_keys_blocked(false)\n", "func _detach():\n", "ui", "keys stay off when the menu closes under a dialog"),
+    ("main.gd", "if settings[\"keep_playing\"] and player.playing and who != null and _holding_guitar(who):", "if player.playing and who != null and _holding_guitar(who):", "ui", "the option is ignored: it always keeps playing"),
+    ("main.gd", "if settings[\"keep_playing\"] and player.playing and who != null and _holding_guitar(who):", "if settings[\"keep_playing\"] and player.playing and who != null:", "ui", "keeps playing without a guitar in hand"),
+    ("main.gd", "	if typeof(it) != TYPE_DICTIONARY or not it.has(\"id\") or not _is_guitar_id(it[\"id\"]):\n		end_background()", "	pass", "ui", "picking another item does not stop the song at once"),
+    ("main.gd", "			or not _holding_guitar(bg_player):\n		end_background()", "			or false:\n		end_background()", "ui", "the poll does not notice an empty hand"),
+    ("main.gd", "	background = false      # the menu is back", "	pass      # the menu is back", "ui", "background flag stays on when the menu comes back"),
+    ("main.gd", "	elif bg_player == null or not is_instance_valid(bg_player) or not bg_player.is_inside_tree() \\\n", "	elif false \\\n", "ui", "a vanished character does not stop the song"),
 ]
 
 

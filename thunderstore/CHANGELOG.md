@@ -1,2 +1,2 @@
-## 1.0.0
-- First version: a MIDI window in the guitar menu. Import .mid files, keep a list, and play them on the guitar by itself.
+## 1.1.0
+- New tick box: keep playing with the guitar menu closed, so you can walk around while the song plays. It stops when you put the guitar away.

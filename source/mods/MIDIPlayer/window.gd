@@ -33,6 +33,7 @@ var semi_label = null
 var btn_semi_dn = null
 var btn_semi_up = null
 var chk_octave = null
+var chk_keep = null
 var btn_tracks_all = null
 var btn_tracks_none = null
 var tracks_scroll = null
@@ -219,6 +220,12 @@ func _build():
 	chk_octave.connect("toggled", self, "_on_octave")
 	body.add_child(chk_octave)
 
+	chk_keep = _plain(CheckBox.new())
+	chk_keep.text = "Keep playing when the menu is closed"
+	chk_keep.hint_tooltip = "Close this menu and walk around with the guitar while the song plays. Put the guitar away to stop."
+	chk_keep.connect("toggled", self, "_on_keep")
+	body.add_child(chk_keep)
+
 	var trow = HBoxContainer.new()
 	trow.add_constant_override("separation", 8)
 	body.add_child(trow)
@@ -335,6 +342,8 @@ func _refresh(force):
 	semi_label.text = ("+%d" % sm) if sm > 0 else str(sm)
 	if chk_octave.pressed != bool(mod.settings["auto_octave"]):
 		chk_octave.pressed = bool(mod.settings["auto_octave"])
+	if chk_keep.pressed != bool(mod.settings["keep_playing"]):
+		chk_keep.pressed = bool(mod.settings["keep_playing"])
 	btn_repeat.text = ["Repeat: off", "Repeat: song", "Repeat: all"][int(mod.settings["repeat"])]
 	_updating = false
 	if mod.message != "" and OS.get_ticks_msec() / 1000.0 < mod.message_until:
@@ -546,6 +555,11 @@ func _on_semi_up():
 func _on_octave(on):
 	if not _updating:
 		mod.set_auto_octave(on)
+
+
+func _on_keep(on):
+	if not _updating:
+		mod.set_keep_playing(on)
 
 
 func _on_track_toggled(on, i):
